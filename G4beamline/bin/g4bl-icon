@@ -1,0 +1,20 @@
+#!/bin/bash
+#	g4bl-icon - construct an icon for G4beamline on the user's Desktop
+#
+#       This works for both Gnome and KDE; it probably works for other
+#       desktop managers.
+
+if test "$G4BL_DIR" = ""
+then
+       G4BL_DIR=`dirname "$('cd' "$(dirname "$BASH_SOURCE")" >/dev/null; pwd)"`
+fi     
+
+cat <<-! >$HOME/Desktop/G4beamline.desktop
+        [Desktop Entry]
+        Exec=$G4BL_DIR/bin/g4blgui %f
+        Icon=$G4BL_DIR/share/g4beamline/g4blicon.png
+        Name=G4beamline
+        Terminal=true
+        Type=Application
+        Path=$HOME
+!

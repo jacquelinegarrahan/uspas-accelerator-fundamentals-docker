@@ -1,0 +1,1 @@
+exec docker run -d --name accelerator-fundamentals -e DISPLAY=$IP:0 -v /tmp/.X11-unix:/tmp/.X11-unix accelerator-fundamentals ./app/G4beamline/bin/g4blgui

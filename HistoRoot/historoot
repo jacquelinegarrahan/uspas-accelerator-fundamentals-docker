@@ -1,0 +1,29 @@
+#!/bin/bash
+HISTO_DIR=`dirname "$0"`
+export HISTO_DIR HISTOROOT_LIB="$HISTO_DIR"/HistoRoot_C.so
+echo
+
+# first, look for an internal installation of Root
+if test -r $HISTO_DIR/root/bin/thisroot.sh
+then
+	source $HISTO_DIR/root/bin/thisroot.sh
+	echo ROOTSYS=$ROOTSYS
+# next, look for an adjacent installation of Root
+elif test -r $HISTO_DIR/../root/bin/thisroot.sh
+then
+	source $HISTO_DIR/../root/bin/thisroot.sh
+	echo ROOTSYS=$ROOTSYS
+# next, try ROOTSYS
+elif test ! -z "$ROOTSYS"
+then
+	echo ROOTSYS=$ROOTSYS
+	source "$ROOTSYS/bin/thisroot.sh"
+# otherwise, Root is not available
+else
+	echo "ERROR -- Root is not installed."
+	exit 1
+fi
+
+echo
+
+ARGS="$@" exec root -l -n "$HISTO_DIR"/Bootstrap.C

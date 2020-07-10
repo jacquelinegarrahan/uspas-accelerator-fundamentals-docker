@@ -1,0 +1,162 @@
+#!/bin/bash
+#	setup - setup Root and HistoRoot executables on Linux, Mac OS X,
+#	and Windows/Cygwin.
+
+SYSTEM=`uname -s`
+
+# handle being run via path
+'cd' `dirname $0`
+
+if ! test -x /bin/bash
+then
+	echo "setup cannot run, because /bin/bash is not found"
+	exit 1
+fi
+
+echo "HistoRoot setup."
+echo
+
+export HISTO_DIR="$PWD"
+echo HISTO_DIR=\"$HISTO_DIR\"
+
+# find Root
+OLD_ROOTSYS="$ROOTSYS"
+REPLACE_ROOT=false
+INSTALL_ROOT=false
+case $SYSTEM in
+Darwin*)
+	if test -x "$HISTO_DIR"/../../../Root.app
+	then
+		R=`dirname "$HISTO_DIR"`
+		R=`dirname "$R"`
+		R=`dirname "$R"`
+		R=`echo "$R"/Root.app/Contents/Resources/root*`
+		if test "$R" != "$ROOTSYS"
+		then
+			INSTALL_ROOT=true
+			if test "$ROOTSYS" != ""
+			then
+				REPLACE_ROOT=true
+			fi
+			export ROOTSYS="$R"
+		fi
+	fi
+	LIBNAME=HistoRoot_C.so
+	;;
+Linux*)
+	LIBNAME=HistoRoot_C.so
+	;;
+CYGWIN*)
+	echo UNIMPLEMENTED
+	exit 1
+	;;
+*)
+	echo UNIMPLEMENTED
+	exit 1
+	;;
+esac
+
+# confirm replacing Root
+if $REPLACE_ROOT
+then
+	echo "Root is already installed in '$OLD_ROOTSYS'."
+	echo "Continuing will probably replace that version with this one,"
+	echo "without deleting it."
+	echo -n "Continue?"
+	read YN
+	if test "${YN#[Yy]}" = "$YN"
+	then
+		exit 1
+	fi
+	echo
+fi
+
+echo
+echo "Now setup the command-line programs to be in your PATH. For each program"
+echo "this will create a 2-line script in the directory you select below."
+echo
+
+HOME_BIN=`echo ":$PATH:" | grep ":$HOME/bin:" 2>/dev/null`
+USR_LOCAL_BIN=`echo ":$PATH:" | grep ":/usr/local/bin:" 2>/dev/null`
+USR_BIN=`echo ":$PATH:" | grep ":/usr/bin:" 2>/dev/null`
+
+ID=`id`
+if test -z "$HOME_BIN" -a "${ID##*root}" = "$ID"
+then
+	echo "NOTE: Your PATH does not include \$HOME/bin and you are not root."
+	echo "You probably need to create that directory and put it into"
+	echo "your PATH before running setup."
+	echo
+fi
+
+echo "The following directories are the usual places to put such programs:"
+if test "$HOME_BIN"; then echo $HOME/bin; fi
+if test "$USR_LOCAL_BIN"; then echo /usr/local/bin; fi
+if test "$USR_BIN"; then echo /usr/bin; fi
+echo
+echo -n "Enter the desired directory: "
+read DIR
+
+if test -z "$DIR"
+then
+	echo "ERROR - no directory given"
+	exit 1
+fi
+
+if ! test -w "$DIR"
+then
+	echo "ERROR -- cannot write into '$DIR'"
+	if test "${DIR#/usr}" != "$DIR"
+	then
+		echo "Note that root privileges are required for /usr"
+	fi
+	exit 1
+fi
+
+if test -x "$DIR/historoot"
+then
+	echo -n  "HistoRoot programs already exist in '$DIR' - overwrite? "
+	read YN
+	if test "${YN#[Yy]}" = "$YN"
+	then
+		exit 1
+	fi
+fi
+
+echo "Creating scripts in '$DIR' referencing these new programs."
+
+# create historoot script
+echo "#!/bin/bash" >"$DIR/historoot"
+echo "exec "$PWD"/historoot \"\$@\"" >>"$DIR/historoot"
+chmod +x "$DIR/historoot"
+
+PATH="$PATH" # force re-scanning PATH
+if ! type historoot | grep $DIR/historoot >/dev/null 2>&1
+then
+	echo "WARNING: Some other version of historoot appears first in your PATH"
+fi
+
+
+if test $SYSTEM = Linux
+then
+	echo "Creating Desktop icon..."
+	cat <<-! >HistoRoot.desktop
+	[Desktop Entry]
+	Exec=$PWD/historoot %f
+	Icon=$PWD/historooticon.png
+	Name=HistoRoot
+	Terminal=true
+	Type=Application
+	Path=$HOME
+!
+	echo -n Created *.desktop
+	if test -d "$HOME/Desktop" -a -w "$HOME/Desktop"
+	then
+		cp *.desktop "$HOME/Desktop"
+		echo -n ", copied to $HOME/Desktop"
+	fi
+	echo
+	echo "HistoRoot.desktop can be dragged or copied into menus, if desired."
+fi
+
+echo setup complete.
