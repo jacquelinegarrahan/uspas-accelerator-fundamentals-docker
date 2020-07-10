@@ -1,1 +1,0 @@
-docker run -d --name accelerator-fundamentals -e DISPLAY=$IP:0 -v /tmp/.X11-unix:/tmp/.X11-unix /app/HistoRoot/historoot
